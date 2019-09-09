@@ -23,6 +23,8 @@ ncol(mnist$train$images)
 library(dslabs)
 library(dplyr)
 library(lubridate)
+library(caret)
+library(dslabs)
 
 data("reported_heights")
 
@@ -395,6 +397,8 @@ dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
 ## model. Then, report the mean and standard deviation (SD) of the RMSEs from 
 ## all 100 models.
 
+
+
 set.seed(1)
 
   rmse <- replicate(100, {
@@ -410,21 +414,114 @@ structure(c(mean(rmse), sd(rmse)), names = c('mean', 'sd'))
 
 
 
-f <- function(n) {
-  rmse <- replicate(n, {
+## Repeat the exercise above but using larger datasets. Write a function that 
+## takes a size n, then (1) builds a dataset using the code provided in question
+## above but with n observations instead of 100 and without the set.seed(1), 
+## (2) runs the replicate loop that you wrote to answer above question, which 
+## builds 100 linear models and returns a vector of RMSEs, 
+## and (3) calculates the mean and standard deviation.
+
+set.seed(1)    # if R 3.6 or later, set.seed(1, sample.kind="Rounding")
+n <- c(100, 500, 1000, 5000, 10000)
+res <- sapply(n, function(n){
+  Sigma <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+  dat <- MASS::mvrnorm(n, c(69, 69), Sigma) %>%
+    data.frame() %>% setNames(c("x", "y"))
+  rmse <- replicate(100, {
     test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
     train_set <- dat %>% slice(-test_index)
     test_set <- dat %>% slice(test_index)
     fit <- lm(y ~ x, data = train_set)
-    y_hat <- fit$coef[1] + fit$coef[2]*test_set$x
-    sqrt(mean((y_hat - test_set$y) ^ 2))
+    y_hat <- predict(fit, newdata = test_set)
+    sqrt(mean((y_hat-test_set$y)^2))
   })
+  c(avg = mean(rmse), sd = sd(rmse), valofrmse = rmse)
+})
 
-  structure(c(mean(rmse), sd(rmse)), names = c('mean', 'sd'))
-}
+res
 
 
-n <- c(100,500,1000,5000,10000)
+## making the correlation between x and y larger
+
 set.seed(1)
-sapply(n, f)
+n <- 100
+Sigma <- 9*matrix(c(1.0, 0.95, 0.95, 1.0), 2, 2)
+dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
+  data.frame() %>% setNames(c("x", "y"))
+
+set.seed(1)
+rmse <- replicate(100, {
+  test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+  train_set <- dat %>% slice(-test_index)
+  test_set <- dat %>% slice(test_index)
+  fit <- lm(y ~ x, data = train_set)
+  y_hat <- predict(fit, newdata = test_set)
+  sqrt(mean((y_hat-test_set$y)^2))
+})
+
+mean(rmse)
+sd(rmse)
+
+
+## Compare the RMSE when using just x_1, just x_2 and both x_1 and x_2. Train a 
+## linear model for each.
+
+## Which of the three models performs the best (has the lowest RMSE)?
+
+
+set.seed(1)
+Sigma <- matrix(c(1.0, 0.75, 0.75, 0.75, 1.0, 0.25, 0.75, 0.25, 1.0), 3, 3)
+dat <- MASS::mvrnorm(n = 100, c(0, 0, 0), Sigma) %>%
+  data.frame() %>% setNames(c("y", "x_1", "x_2"))
+
+set.seed(1)
+test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+train_set <- dat %>% slice(-test_index)
+test_set <- dat %>% slice(test_index)
+
+fit <- lm(y ~ x_1, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+fit <- lm(y ~ x_2, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+fit <- lm(y ~ x_1 + x_2, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+
+
+## partition into a test and training set of equal size. Compare the RMSE when 
+## using just x_1, just x_2, and both x_1 and x_2.
+
+## Compare the results from previous question. What can you conclude?
+
+set.seed(1)
+Sigma <- matrix(c(1.0, 0.75, 0.75, 0.75, 1.0, 0.95, 0.75, 0.95, 1.0), 3, 3)
+dat <- MASS::mvrnorm(n = 100, c(0, 0, 0), Sigma) %>%
+  data.frame() %>% setNames(c("y", "x_1", "x_2"))
+
+set.seed(1)
+test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+train_set <- dat %>% slice(-test_index)
+test_set <- dat %>% slice(test_index)
+
+fit <- lm(y ~ x_1, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+fit <- lm(y ~ x_2, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+fit <- lm(y ~ x_1 + x_2, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+# Conclusion : Adding extra predictors can improve RMSE substantially, but 
+#              not when the added predictors are highly correlated with other 
+#              predictors.
+
 
