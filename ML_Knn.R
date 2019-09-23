@@ -64,3 +64,39 @@ ks[which.max(F_1)]
 plot(ks, F_1)
 
 
+
+##### Not finished 23-Sep-2019
+
+library(dslabs)
+data("tissue_gene_expression")
+
+#create training index (rather than test index) as suggested by comments
+set.seed(1)
+
+train_index <- createDataPartition(tissue_gene_expression$y, p = 0.5, list = FALSE)
+
+# split original data set into x and y
+
+# x <- tissue_gene_expression$x
+# y <- tissue_gene_expression$y
+
+# split x into train and test sets
+
+test_set_x = as.data.frame(tissue_gene_expression$x)[train_index, ]
+train_set_x = as.data.frame(tissue_gene_expression$x)[-train_index, ]
+
+
+ks <- seq(1, 11, 2)
+
+acc <- sapply(ks, function(k){
+        fit <- knn3(y ~ x, data = train_set_x, k = ks)
+        y_hat <- predict(fit, test_set_x, type = "class") %>% 
+          factor(levels = levels(train_set_x$y))
+        F_meas(data = y_hat, reference = test_set_x$y)
+})
+
+ks
+acc
+
+
+  
