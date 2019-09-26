@@ -65,38 +65,37 @@ plot(ks, F_1)
 
 
 
-##### Not finished 23-Sep-2019
+## use the same gene expression example used in the Comprehension Check: 
+## Distance exercises
+## Split the data into training and test sets, and report the accuracy you obtain.
+## Try it for k = 1, 3, 5, 7, 9, 11. Set the seed to 1 before splitting the data.
 
-library(dslabs)
-data("tissue_gene_expression")
-
-#create training index (rather than test index) as suggested by comments
 set.seed(1)
+library(caret)
+y <- tissue_gene_expression$y
+x <- tissue_gene_expression$x
+test_index <- createDataPartition(y, list = FALSE)
+sapply(seq(1, 11, 2), function(k){
+  fit <- knn3(x[-test_index,], y[-test_index], k = k)
+  y_hat <- predict(fit, newdata = data.frame(x=x[test_index,]),
+                   type = "class")
+  mean(y_hat == y[test_index])
+})
 
-train_index <- createDataPartition(tissue_gene_expression$y, p = 0.5, list = FALSE)
-
-# split original data set into x and y
-
-# x <- tissue_gene_expression$x
-# y <- tissue_gene_expression$y
-
-# split x into train and test sets
-
-test_set_x = as.data.frame(tissue_gene_expression$x)[train_index, ]
-train_set_x = as.data.frame(tissue_gene_expression$x)[-train_index, ]
-
+##### For practise incomplete code need to be complete #####
+data('tissue_gene_expression')
 
 ks <- seq(1, 11, 2)
 
-acc <- sapply(ks, function(k){
-        fit <- knn3(y ~ x, data = train_set_x, k = ks)
-        y_hat <- predict(fit, test_set_x, type = "class") %>% 
-          factor(levels = levels(train_set_x$y))
-        F_meas(data = y_hat, reference = test_set_x$y)
-})
+set.seed(1, sample.kind="Rounding")
 
-ks
-acc
+train_index <- createDataPartition(tissue_gene_expression$y, p = 0.5, list = FALSE)
 
+x <- tissue_gene_expression$x
+y <- tissue_gene_expression$y
 
-  
+# split x and y into train and test sets
+train_set_x <- x[train_index,]
+test_set_x <- x[-train_index,]
+
+####### ######## ######## ######### ######### #########
