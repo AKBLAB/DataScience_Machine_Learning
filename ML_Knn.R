@@ -176,3 +176,58 @@ fit <- with(tissue_gene_expression, train(x, y, method = "knn", tuneGrid = data.
 ggplot(fit)
 fit$results
 
+
+
+### Bootstrap ###
+
+## create 10 bootstrap samples for the mnist_27 dataset
+
+library(caret)
+library(dslabs)
+set.seed(1995)
+indexes <- createResample(mnist_27$train$y, 10)
+
+## How many times do 3, 4, and 7 appear in the first resampled index?
+
+sum(indexes[[1]] == 3)
+sum(indexes[[1]] == 4)
+sum(indexes[[1]] == 7)
+
+## How many times 3 appear in all the resampled indexes
+
+x=sapply(indexes, function(ind){
+  sum(ind == 3)
+})
+sum(x)
+
+
+## Generate a random dataset (y <- rnorm(100, 0, 1)) , Estimate the 75th 
+## quantile, which we know is qnorm(0.75), with the sample 
+## quantile: quantile(y, 0.75).
+
+## Set the seed to 1 and perform a Monte Carlo simulation with 10,000 repetitions
+## , generating the random dataset and estimating the 75th quantile each time. 
+## What is the expected value and standard error of the 75th quantile?
+
+y <- rnorm(100, 0, 1)
+set.seed(1)
+N <- 10000
+M <- replicate(N, {
+      y <- rnorm(100, 0, 1)
+      quantile(y,0.75)
+})
+
+mean(M)
+sd(M)
+
+
+
+## .... to be completed 13-Oct-2019
+
+N <- 10000
+M <- replicate(N, {
+  y <- rnorm(100, 0, 1)
+  median(y)
+})
+
+quantile(M,0.75)
