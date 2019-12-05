@@ -222,12 +222,115 @@ sd(M)
 
 
 
-## .... to be completed 13-Oct-2019
+## Completed
 
-N <- 10000
-M <- replicate(N, {
-  y <- rnorm(100, 0, 1)
-  median(y)
+set.seed(1)
+y <- rnorm(100, 0, 1)
+set.seed(1)
+indexes <- createResample(y, 10)
+
+M <- sapply(indexes,function(ival) {
+            B <- y[ival]
+            quantile(B, 0.75)
 })
+mean(M)
+sd(M)
 
-quantile(M,0.75)
+
+##
+
+set.seed(1)
+y <- rnorm(100, 0, 1)
+set.seed(1)
+indexes <- createResample(y, 10000)
+
+M <- sapply(indexes,function(ival) {
+  B <- y[ival]
+  quantile(B, 0.75)
+})
+mean(M)
+sd(M)
+
+
+
+### Generative Models
+
+## FOR LDA :  Create a dataset of samples from just cerebellum and hippocampus, two parts of the brain,
+## and a predictor matrix with 10 randomly selected columns
+
+library(dslabs)
+library(caret)
+data("tissue_gene_expression")
+
+set.seed(1993) #set.seed(1993, sample.kind="Rounding") if using R 3.6 or later
+ind <- which(tissue_gene_expression$y %in% c("cerebellum", "hippocampus"))
+y <- droplevels(tissue_gene_expression$y[ind])
+x <- tissue_gene_expression$x[ind, ]
+x <- x[, sample(ncol(x), 10)]
+
+# estimate the accuracy of LDA.
+
+fit_LDA <- train(x, y, method = "lda")
+
+
+## Which TWO genes appear to be driving the algorithm?
+
+library(tidyverse)
+
+t(fit_LDA$finalModel$means) %>% data.frame() %>%
+  mutate(predictor_name = rownames(.)) %>%
+  ggplot(aes(cerebellum, hippocampus, label = predictor_name)) +
+  geom_point() +
+  geom_text() +
+  geom_abline()
+
+
+
+## FOR QDA :  Create a dataset of samples from just cerebellum and hippocampus, two parts of the brain,
+## and a predictor matrix with 10 randomly selected columns
+
+library(dslabs)      
+library(caret)
+data("tissue_gene_expression")
+
+set.seed(1993) #set.seed(1993, sample.kind="Rounding") if using R 3.6 or later
+ind <- which(tissue_gene_expression$y %in% c("cerebellum", "hippocampus"))
+y <- droplevels(tissue_gene_expression$y[ind])
+x <- tissue_gene_expression$x[ind, ]
+x <- x[, sample(ncol(x), 10)]
+
+# estimate the accuracy of QDA.
+
+fit_QDA <- train(x, y, method = "qda")
+
+
+## Which TWO genes drive the algorithm when using QDA instead of LDA?
+
+t(fit_QDA$finalModel$means) %>% data.frame() %>%
+  mutate(predictor_name = rownames(.)) %>%
+  ggplot(aes(cerebellum, hippocampus, label = predictor_name)) +
+  geom_point() +
+  geom_text() +
+  geom_abline()
+
+
+## Which TWO genes drive the algorithm after performing the scaling?
+
+fit_LDA <- train(x, y, method = "lda", preProcess="center")
+
+
+
+## Repeat the LDA analysis from above but using all tissue types.
+
+library(dslabs)      
+library(caret)
+data("tissue_gene_expression")
+
+set.seed(1993) #set.seed(1993, sample.kind="Rounding") if using R 3.6 or later
+y <- tissue_gene_expression$y
+x <- tissue_gene_expression$x
+x <- x[, sample(ncol(x), 10)]
+
+fit_LDA <- train(x, y, method = "lda", preProcess="center")
+
+fit_LDA$results["Accuracy"]
