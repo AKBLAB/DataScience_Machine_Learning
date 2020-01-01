@@ -139,3 +139,139 @@
     imp
 
 
+    
+### Titanic Exercise Part 1
+    
+## Background
+
+## The Titanic was a British ocean liner that struck an iceberg and sunk on its maiden voyage in 1912 from the United Kingdom 
+## to New York. More than 1,500 of the estimated 2,224 passengers and crew died in the accident, making this one of the largest 
+## maritime disasters ever outside of war. The ship carried a wide range of passengers of all ages and both genders, 
+## from luxury travelers in first-class to immigrants in the lower classes. However, not all passengers were equally likely to 
+## survive the accident. You will use real data about a selection of 891 passengers to predict which passengers survived.
+
+    library(titanic)    # loads titanic_train data frame
+    library(caret)
+    library(tidyverse)
+    library(rpart)
+    
+    # 3 significant digits
+    options(digits = 3)
+    
+    # clean the data - `titanic_train` is loaded with the titanic package
+    titanic_clean <- titanic_train %>%
+      mutate(Survived = factor(Survived),
+             Embarked = factor(Embarked),
+             Age = ifelse(is.na(Age), median(Age, na.rm = TRUE), Age), # NA age to median age
+             FamilySize = SibSp + Parch + 1) %>%    # count family members
+      select(Survived,  Sex, Pclass, Age, Fare, SibSp, Parch, FamilySize, Embarked)
+    
+## Q1 
+    
+    set.seed(42)
+    
+    y <- titanic_clean$Survived
+    
+    testIndex <- createDataPartition(y, times = 1,p = 0.2, list = FALSE)
+    trainset <- titanic_clean %>% slice(-testIndex)
+    testset <- titanic_clean %>% slice(testIndex)
+    nrow(trainset)
+    nrow(testset)
+    
+    mean(trainset$Survived == 1)
+    
+
+## Q2 The simplest prediction method is randomly guessing the outcome without using additional predictors. These methods will help 
+##  us determine whether our machine learning algorithm performs better than chance. How accurate are two methods of guessing 
+## Titanic passenger survival?
+    
+## Set the seed to 3. For each individual in the test set, randomly guess whether that person survived or not by sampling from 
+## the vector c(0,1). Assume that each person has an equal chance of surviving or not surviving.
+    
+## What is the accuracy of this guessing method?
+    
+    set.seed(3)
+    samplvalue <- sample(c(0,1),nrow(testset), replace = TRUE)
+    mean(samplvalue == testset$Survived)
+
+
+## Q3
+    
+    trainset %>%
+      group_by(Sex) %>%
+      summarize(Survived = mean(Survived == 1)) %>%
+      filter(Sex == "female") %>%
+      pull(Survived)
+    
+    trainset %>%
+      group_by(Sex) %>%
+      summarize(Survived = mean(Survived == 1)) %>%
+      filter(Sex == "male") %>%
+      pull(Survived)
+    
+    
+    
+    
+    pred = list()
+    for (i in 1:length(testset$Survived)) {
+      if (testset[i,]$Sex == 'male') {
+        pred[i] = 0
+      }
+      else {
+        pred[i] = 1 
+      }
+    }
+    mean(as.numeric(as.character( testset$Survived)) == pred)
+    
+    # OR
+    
+    sex_model <- ifelse(testset$Sex == "female", 1, 0)    # predict Survived=1 if female, 0 if male
+    mean(sex_model == testset$Survived)    # calculate accuracy
+    
+
+## Q4a
+    trainset %>%
+      group_by(Pclass) %>%
+      summarize(Survived = mean(Survived == 1))
+    
+## Q4b
+    simple_class_model <- ifelse(testset$Pclass == 1, 1, 0)
+    mean(simple_class_model == testset$Survived)
+    confusionMatrix(data= factor(simple_class_model), reference = factor(testset$Survived))
+    
+## Q4c
+    
+    trainset %>%
+      group_by(Sex, Pclass) %>%
+      summarize(Survived = mean(Survived == 1)) %>%
+      filter(Survived > 0.5)
+    
+## Q4d
+    simple_gender_model <- ifelse(testset$Pclass %in% 1:2 & testset$Sex == "female", 1, 0)
+    mean(simple_gender_model == testset$Survived)
+    confusionMatrix(data= factor(simple_gender_model), reference = factor(testset$Survived))
+    
+    ## OR
+    
+    sex_class_model <- ifelse(testset$Sex == "female" & testset$Pclass != 3, 1, 0)
+    mean(sex_class_model == testset$Survived)
+    
+    
+## Q5 a
+    
+    survival_pred_sex <-as.factor(sex_model)
+    confusionMatrix(survival_pred_sex, testset$Survived)
+    
+    survival_pred_Sex_class <- as.factor(simple_gender_model)
+    confusionMatrix(survival_pred_Sex_class, testset$Survived)
+    
+    survival_pred_class <- as.factor(simple_class_model)
+    confusionMatrix(survival_pred_class, testset$Survived)
+    
+## Q6
+    
+    library(yardstick)
+    F_meas(as.factor(sex_model), as.factor(testset$Survived))
+    F_meas(as.factor(simple_gender_model), as.factor(testset$Survived))
+    F_meas(as.factor(simple_class_model), as.factor(testset$Survived))
+    
