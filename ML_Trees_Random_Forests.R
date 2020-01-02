@@ -274,4 +274,97 @@
     F_meas(as.factor(sex_model), as.factor(testset$Survived))
     F_meas(as.factor(simple_gender_model), as.factor(testset$Survived))
     F_meas(as.factor(simple_class_model), as.factor(testset$Survived))
+
+
+## Q7
+    
+    set.seed(1)
+    fit_lda <- train(Survived ~ Fare, data = trainset, method = 'lda')
+    Survived_hat <- predict(fit_lda, testset)
+    mean(testset$Survived == Survived_hat)
+    
+    set.seed(1)
+    fit_qda <- train(Survived ~ Fare, data = trainset, method = 'qda')
+    Survived_hat <- predict(fit_qda, testset)
+    mean(testset$Survived == Survived_hat)
+
+## Q8
+    set.seed(1)
+    fit_logreg_a <- glm(Survived ~ Age, data = trainset, family = 'binomial')
+    survived_hat_a <- ifelse(predict(fit_logreg_a, testset) >= 0, 1, 0)
+    mean(survived_hat_a == testset$Survived)
+    
+    set.seed(1)
+    fit_logreg_b <- glm(Survived ~ Sex + Pclass + Fare + Age, data = trainset, family = 'binomial')
+    survived_hat_b <- ifelse(predict(fit_logreg_b, testset) >= 0, 1, 0)
+    mean(survived_hat_b == testset$Survived)
+    
+    set.seed(1)
+    str(trainset)
+    fit_logreg_c <- glm(Survived ~ ., data = trainset, family = 'binomial')
+    survived_hat_c <- ifelse(predict(fit_logreg_c, testset) >= 0, 1, 0)
+    mean(survived_hat_c == testset$Survived)
+    
+## Q9 a
+    set.seed(6)
+    k <- seq(3,51,2)
+    fit_knn9a <- train(Survived ~ ., data = trainset, method = "knn", tuneGrid = data.frame(k))
+    fit_knn9a$bestTune
+    
+## Q9 b
+    
+    ggplot(fit_knn9a)
+
+    
+## Q9 C
+    survived_hat <- predict(fit_knn9a, testset) %>% factor(levels = levels(testset$Survived))
+    cm_test <- confusionMatrix(data = survived_hat, reference = testset$Survived)
+    cm_test$overall["Accuracy"]
+
+## Q10
+    set.seed(8)
+    fit_knn10 <- train(Survived ~ ., 
+                       data=trainset, 
+                       method = "knn",
+                       tuneGrid = data.frame(k = seq(3, 51, 2)),
+                       trControl = trainControl(method = "cv", number=10, p=0.9))
+    fit_knn10
+    survived_hat <- predict(fit_knn10, testset)
+    cm_test <- confusionMatrix(data = survived_hat, reference = testset$Survived)
+    cm_test$overall["Accuracy"]
+    
+## Q11 a
+    set.seed(10, sample.kind = 'Rounding')
+    fit_rpart11 <- train(Survived ~ ., 
+                         data=trainset, 
+                         method = "rpart",
+                         tuneGrid = data.frame(cp = seq(0, 0.05, 0.002)))
+    plot(fit_rpart11)
+    survived_hat <- predict(fit_rpart11, testset)
+    cm_test <- confusionMatrix(data = survived_hat, reference = testset$Survived)
+    cm_test$overall["Accuracy"]
+    
+    
+# Q11 b
+    fit_rpart11$finalModel
+    plot(fit_rpart11$finalModel, margin=0.1)
+    text(fit_rpart11$finalModel, cex = 0.75)
+
+  
+# Q12
+    set.seed(14, sample.kind = 'Rounding')
+    fit12_rf <- train(Survived ~., 
+                      data = trainset,
+                      method = "rf", 
+                      tuneGrid = data.frame(mtry = seq(1, 7)), 
+                      ntree = 100)
+    fit12_rf$bestTune
+    
+    survived_hat <- predict(fit12_rf, testset)
+    mean(survived_hat == testset$Survived)
+    
+    varImp(fit12_rf)
+    
+    
+    
     
